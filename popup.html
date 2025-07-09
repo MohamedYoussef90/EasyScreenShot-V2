@@ -10,6 +10,9 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       margin: 0;
+      display: flex; /* Use flexbox for layout */
+      flex-direction: column; /* Stack items vertically */
+      /* min-height: 100vh; /* Removed to allow content to dictate height */ */
     }
     
     .header {
@@ -124,6 +127,15 @@
       background: rgba(255, 255, 255, 0.2);
       margin: 15px 0;
     }
+
+    /* Updated style for the footer */
+    .footer {
+      text-align: center;
+      margin-top: 10px; /* Reduced spacing */
+      padding-top: 0; /* Removed padding top as margin is used */
+      font-size: 10px; /* Small font size */
+      opacity: 0.7; /* Slightly transparent for a subtle look */
+    }
   </style>
 </head>
 <body>
@@ -153,7 +165,11 @@
   
   <div class="status" id="status">Ready to capture</div>
   
+  <!-- New footer section -->
+  <div class="footer">
+    Developed by Mohamed Youssef
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
-
