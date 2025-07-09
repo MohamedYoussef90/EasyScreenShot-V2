@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>EasyScreenshot - Preview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 15px 20px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+    
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary {
+      background: #4CAF50;
+    }
+    
+    .btn-primary:hover {
+      background: #45a049;
+    }
+    
+    .content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow: auto;
+    }
+    
+    .screenshot-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      max-width: 95%;
+      max-height: 95%;
+      overflow: auto;
+    }
+    
+    .screenshot-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .loading {
+      text-align: center;
+      color: white;
+      font-size: 18px;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .info-bar {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px 20px;
+      color: white;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .url-info {
+      opacity: 0.8;
+      word-break: break-all;
+    }
+    
+    .timestamp {
+      opacity: 0.6;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📸 EasyScreenshot Preview</h1>
+    <div class="header-actions">
+      <button id="downloadBtn" class="btn btn-primary">💾 Download</button>
+      <button id="copyBtn" class="btn">📋 Copy</button>
+      <button id="closeBtn" class="btn">✕ Close</button>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+      Processing screenshot...
+    </div>
+    <div id="screenshotContainer" class="screenshot-container" style="display: none;">
+      <img id="screenshotImage" class="screenshot-image" alt="Screenshot">
+    </div>
+  </div>
+  
+  <div id="infoBar" class="info-bar" style="display: none;">
+    <div class="url-info" id="urlInfo"></div>
+    <div class="timestamp" id="timestamp"></div>
+  </div>
+  
+  <script src="screenshot_preview.js"></script>
+</body>
+</html>
+
