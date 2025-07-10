@@ -1,6 +1,6 @@
-# Creating the README.md file content for EasyScreenshot Chrome Extension
 
-readme_content = """
+
+
 # 🖼️ EasyScreenshot - Chrome Extension
 
 A powerful Chrome extension that allows users to capture screenshots of web pages with advanced features and preview capabilities.
