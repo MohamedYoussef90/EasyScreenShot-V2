@@ -6,6 +6,26 @@ document.addEventListener('DOMContentLoaded', function() {
   
   let includeUrl = true;
   
+  // Enhanced error handling utility
+  const showError = (message) => {
+    console.error('EasyScreenshot Popup Error:', message);
+    status.textContent = `Error: ${message}`;
+    status.style.color = '#ff4444';
+    setTimeout(() => {
+      status.textContent = 'Ready to capture';
+      status.style.color = '';
+    }, 3000);
+  };
+  
+  const showSuccess = (message) => {
+    status.textContent = message;
+    status.style.color = '#4CAF50';
+    setTimeout(() => {
+      status.textContent = 'Ready to capture';
+      status.style.color = '';
+    }, 2000);
+  };
+  
   // Toggle URL inclusion
   urlToggle.addEventListener('click', function() {
     includeUrl = !includeUrl;
@@ -14,105 +34,104 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => updateStatus('Ready to capture'), 1500);
   });
   
-  // Capture visible area
+  // Capture visible area with enhanced error handling
   visibleAreaBtn.addEventListener('click', function() {
-    updateStatus('Capturing visible area...');
-    
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      const currentTab = tabs[0];
+    try {
+      updateStatus('Capturing visible area...');
       
-      chrome.runtime.sendMessage({
-        action: 'captureVisibleArea',
-        url: currentTab.url,
-        includeUrl: includeUrl
-      }, function(response) {
-        if (response && response.dataUrl) {
-          processAndShowScreenshot(response.dataUrl, currentTab.url, includeUrl);
-          updateStatus('Screenshot captured!');
-          setTimeout(() => window.close(), 1000);
-        } else {
-          updateStatus('Error capturing screenshot');
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        try {
+          if (!tabs || tabs.length === 0) {
+            throw new Error('No active tab found');
+          }
+          
+          const currentTab = tabs[0];
+          if (!currentTab.url) {
+            throw new Error('Tab URL not available');
+          }
+          
+          // Send message to background script to initiate capture
+          // The background script will handle the capture and call showScreenshot
+          chrome.runtime.sendMessage({
+            action: 'captureVisibleArea',
+            url: currentTab.url,
+            includeUrl: includeUrl
+          }, function(response) {
+            try {
+              console.log('Popup received response from background (Visible Area):', response);
+              if (chrome.runtime.lastError) {
+                throw new Error(chrome.runtime.lastError.message);
+              }
+              
+              if (response && response.error) {
+                throw new Error(response.error);
+              }
+              
+              // The background script now handles the full process (capture -> showScreenshot)
+              // The popup just needs to wait for the background to finish.
+              setTimeout(() => window.close(), 1000);
+              
+            } catch (error) {
+              showError(`Capture failed: ${error.message}`);
+            }
+          });
+        } catch (error) {
+          showError(`Tab query failed: ${error.message}`);
         }
       });
-    });
+    } catch (error) {
+      showError(`Button click failed: ${error.message}`);
+    }
   });
   
-  // Capture entire page
+  // Capture entire page with enhanced error handling
   entirePageBtn.addEventListener('click', function() {
-    updateStatus('Capturing entire page...');
-    
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      const currentTab = tabs[0];
+    try {
+      updateStatus('Capturing entire page...');
       
-      chrome.runtime.sendMessage({
-        action: 'captureEntirePage',
-        url: currentTab.url,
-        includeUrl: includeUrl
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        try {
+          if (!tabs || tabs.length === 0) {
+            throw new Error('No active tab found');
+          }
+          
+          const currentTab = tabs[0];
+          if (!currentTab.url) {
+            throw new Error('Tab URL not available');
+          }
+          
+          chrome.runtime.sendMessage({
+            action: 'captureEntirePage',
+            url: currentTab.url,
+            includeUrl: includeUrl
+          }, function(response) {
+            try {
+              console.log('Popup received response from background (Entire Page):', response);
+              if (chrome.runtime.lastError) {
+                throw new Error(chrome.runtime.lastError.message);
+              }
+              
+              if (response && response.error) {
+                throw new Error(response.error);
+              }
+              
+              setTimeout(() => window.close(), 1000);
+            } catch (error) {
+              showError(`Full page capture failed: ${error.message}`);
+            }
+          });
+        } catch (error) {
+          showError(`Tab query failed: ${error.message}`);
+        }
       });
-      
-      updateStatus('Processing full page...');
-      setTimeout(() => window.close(), 1000);
-    });
+    } catch (error) {
+      showError(`Button click failed: ${error.message}`);
+    }
   });
   
-  function processAndShowScreenshot(dataUrl, url, includeUrl) {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = function() {
-      let canvasHeight = img.height;
-      
-      // Add space for URL if needed
-      if (includeUrl) {
-        canvasHeight += 50;
-      }
-      
-      canvas.width = img.width;
-      canvas.height = canvasHeight;
-      
-      // Fill background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Add URL at top if enabled
-      if (includeUrl) {
-        ctx.fillStyle = '#333333';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(url, 15, 30);
-        
-        // Draw line separator
-        ctx.strokeStyle = '#cccccc';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(15, 40);
-        ctx.lineTo(canvas.width - 15, 40);
-        ctx.stroke();
-        
-        // Draw screenshot below URL
-        ctx.drawImage(img, 0, 50);
-      } else {
-        // Draw screenshot without URL
-        ctx.drawImage(img, 0, 0);
-      }
-      
-      const finalDataUrl = canvas.toDataURL('image/png');
-      
-      // Show screenshot in new tab
-      chrome.runtime.sendMessage({
-        action: 'showScreenshot',
-        dataUrl: finalDataUrl,
-        url: url,
-        includeUrl: includeUrl
-      });
-    };
-    
-    img.src = dataUrl;
-  }
+  // Removed the local processAndShowScreenshot function as it's now handled by the background script
   
   function updateStatus(message) {
     status.textContent = message;
   }
 });
-

@@ -137,9 +137,10 @@
   <div class="header">
     <h1>📸 EasyScreenshot Preview</h1>
     <div class="header-actions">
-      <button id="downloadBtn" class="btn btn-primary">💾 Download</button>
-      <button id="copyBtn" class="btn">📋 Copy</button>
-      <button id="closeBtn" class="btn">✕ Close</button>
+      <button id="downloadBtn" class="btn btn-primary" aria-label="Download screenshot">💾 Download</button>
+      <button id="copyBtn" class="btn" aria-label="Copy screenshot to clipboard">📋 Copy</button>
+      <button id="highlightBtn" class="btn" aria-label="Toggle highlight mode" aria-pressed="false">🖍️ Highlight</button>
+      <button id="closeBtn" class="btn" aria-label="Close preview tab">✕ Close</button>
     </div>
   </div>
   
@@ -148,8 +149,9 @@
       <div class="loading-spinner"></div>
       Processing screenshot...
     </div>
-    <div id="screenshotContainer" class="screenshot-container" style="display: none;">
+    <div id="screenshotContainer" class="screenshot-container" style="display: none; position: relative;">
       <img id="screenshotImage" class="screenshot-image" alt="Screenshot">
+      <canvas id="highlightCanvas" style="display:none; position:absolute; left:0; top:0; pointer-events:none;"></canvas>
     </div>
   </div>
   
