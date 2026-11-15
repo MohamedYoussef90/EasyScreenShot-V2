@@ -31,6 +31,15 @@ A powerful Chrome extension that allows users to capture screenshots of web page
 - Copy the image to the clipboard.
 - Automatically generated filenames with timestamps.
 
+### 🌗 System-Aware Appearance
+- The popup and screenshot preview follow the operating system's light or dark color scheme.
+- Controls and text use matching colors for readability in both themes.
+
+### 📊 Capture Feedback and Recovery
+- Full-page capture displays a page status badge with segment progress and stitching status.
+- Sticky and fixed page elements are managed across segments to reduce duplication.
+- Capture failures, including pages Chrome restricts, are reported in the popup or page status badge.
+
 ---
 
 ## ⚙️ Installation
@@ -60,6 +69,7 @@ A powerful Chrome extension that allows users to capture screenshots of web page
 - 📋 **Copy** to clipboard
 - ✕ **Close** preview tab
 - Keyboard Shortcuts supported
+- Light and dark themes follow the system color scheme
 
 ---
 
@@ -69,10 +79,12 @@ A powerful Chrome extension that allows users to capture screenshots of web page
 
 - `manifest.json` – Extension configuration (Manifest V3)
 - `popup.html` – Extension popup UI
+- `popup.css` – Popup layout and system-aware light/dark styles
 - `popup.js` – Popup interaction logic
-- `content.js` – Full page scroll & capture
+- `content.js` – Full-page scrolling, segment capture, progress status, and stitching
 - `background.js` – Message passing and capture initiation
 - `screenshot_preview.html` – Screenshot preview page
+- `screenshot_preview.css` – Preview layout and system-aware light/dark styles
 - `screenshot_preview.js` – Preview logic
 - `images/` – Icons and graphics
 - `README.md` – This documentation
@@ -81,9 +93,9 @@ A powerful Chrome extension that allows users to capture screenshots of web page
 
 - `activeTab` – To capture the current tab
 - `scripting` – To inject scroll logic for full-page capture
-- `storage` – To remember URL toggle preference
+- `storage` – To pass screenshot data to the preview window
 - `downloads` – To allow saving files
-- `<all_urls>` – To allow screenshots on any page
+- `<all_urls>` – To enable extension access on supported websites. Chrome still blocks capture or script injection on some protected pages, such as extension settings and parts of the Chrome Web Store.
 
 ### Browser Compatibility
 
@@ -99,7 +111,9 @@ A powerful Chrome extension that allows users to capture screenshots of web page
 Uses Chrome’s `captureVisibleTab` API to get a screenshot of the visible viewport. Adds the URL header if enabled.
 
 ### Capture Entire Page
-Injects a script to scroll from bottom to top, capturing segments. Each image is stitched into a full-page composite using the Canvas API.
+Injects a content script that prepares the page, visits its viewports to allow lazy-loaded content to settle, and captures sequential viewport segments. Fixed and sticky elements are hidden or shown selectively to reduce duplicates and misplaced headers or footers. The segments are stitched into a full-page composite using the Canvas API, and the original scroll position and temporary page styles are restored afterward. A status badge reports preparation, segment progress, and stitching.
+
+Chrome may deny capture or script injection on restricted pages. In those cases, EasyScreenshot reports that the page cannot be captured and suggests opening a regular website.
 
 ### Preview Tab
 Opens in a new tab:
