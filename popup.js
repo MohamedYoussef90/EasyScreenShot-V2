@@ -10,19 +10,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const showError = (message) => {
     console.error('EasyScreenshot Popup Error:', message);
     status.textContent = `Error: ${message}`;
-    status.style.color = '#ff4444';
+    status.dataset.state = 'error';
     setTimeout(() => {
       status.textContent = 'Ready to capture';
-      status.style.color = '';
+      delete status.dataset.state;
     }, 3000);
   };
   
   const showSuccess = (message) => {
     status.textContent = message;
-    status.style.color = '#4CAF50';
+    status.dataset.state = 'success';
     setTimeout(() => {
       status.textContent = 'Ready to capture';
-      status.style.color = '';
+      delete status.dataset.state;
     }, 2000);
   };
   
@@ -65,6 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
               
               if (response && response.error) {
                 throw new Error(response.error);
+              }
+              if (!response || !response.success) {
+                throw new Error('The screenshot could not be captured.');
               }
               
               // The background script now handles the full process (capture -> showScreenshot)
@@ -114,6 +117,9 @@ document.addEventListener('DOMContentLoaded', function() {
               if (response && response.error) {
                 throw new Error(response.error);
               }
+              if (!response || !response.success) {
+                throw new Error('The screenshot could not be captured.');
+              }
               
               setTimeout(() => window.close(), 1000);
             } catch (error) {
@@ -133,5 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   function updateStatus(message) {
     status.textContent = message;
+    delete status.dataset.state;
   }
 });

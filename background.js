@@ -1,10 +1,15 @@
-// Helper function to handle errors and send a response
-const handleError = (error, sendResponse) => {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  console.error('Background Script Error:', errorMessage, chrome.runtime.lastError);
-  if (sendResponse) {
-    sendResponse({ error: errorMessage });
+const friendlyCaptureError = (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/cannot access|not allowed|restricted|chrome:\/\/|web store|extensions gallery|cannot be scripted|cannot be captured|permission/i.test(message)) {
+    return 'Chrome does not allow screenshots of this page. Open a regular website and try again.';
   }
+  return message;
+};
+
+const handleError = (error, sendResponse) => {
+  const errorMessage = friendlyCaptureError(error);
+  console.error('Background Script Error:', errorMessage);
+  sendResponse({ error: errorMessage });
 };
 
 // Helper function to open the screenshot preview window
@@ -43,12 +48,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.tabs.captureVisibleTab(null, { format: 'png' }, async (dataUrl) => {
         try {
           if (chrome.runtime.lastError) {
-            handleError('Capture visible tab failed: ' + chrome.runtime.lastError.message, sendResponse);
+            handleError(chrome.runtime.lastError.message, sendResponse);
             return;
           }
           
           if (!dataUrl) {
-            handleError('No screenshot data captured', sendResponse);
+            handleError('No screenshot data captured.', sendResponse);
             return;
           }
           
@@ -78,6 +83,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
           
           const tabId = tabs[0].id;
+          if (typeof tabId !== 'number') {
+            handleError('The active tab is unavailable for capture.', sendResponse);
+            return;
+          }
           
           // Inject the content script using the modern chrome.scripting API
           chrome.scripting.executeScript({
@@ -86,7 +95,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }, (injectionResults) => {
             try {
               if (chrome.runtime.lastError) {
-                handleError('Script injection failed: ' + chrome.runtime.lastError.message, sendResponse);
+                handleError(chrome.runtime.lastError.message, sendResponse);
                 return;
               }
               
@@ -96,13 +105,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 url: message.url, 
                 includeUrl: message.includeUrl 
               }, (response) => {
-                // The content script will handle the full page capture and call 'showScreenshot'
                 if (chrome.runtime.lastError) {
-                  // This error is likely due to the content script not responding (e.g., on a restricted page)
-                  // The content script should ideally handle its own errors and send a message back.
-                  console.warn('Message to content script failed (may be expected on restricted pages):', chrome.runtime.lastError.message);
+                  handleError(chrome.runtime.lastError.message, sendResponse);
+                  return;
                 }
-                // Respond to the popup to close it
+
+                if (!response || response.error) {
+                  handleError(response && response.error ? response.error : 'The page did not return a screenshot.', sendResponse);
+                  return;
+                }
                 sendResponse({ success: true });
               });
             } catch (error) {
@@ -120,13 +131,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
         try {
           if (chrome.runtime.lastError) {
-            // Explicitly report the error back to the content script
-            const error = chrome.runtime.lastError.message;
-            console.error('Capture for full page failed:', error);
-            sendResponse({ error: error });
+            sendResponse({ error: friendlyCaptureError(chrome.runtime.lastError.message) });
             return;
           }
-          sendResponse({ dataUrl: dataUrl });
+          if (!dataUrl) {
+            sendResponse({ error: 'Chrome did not return screenshot data for this page segment.' });
+            return;
+          }
+          sendResponse({ dataUrl });
         } catch (error) {
           handleError(error, sendResponse);
         }
@@ -145,8 +157,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
   } catch (error) {
-    // Top-level error handler - log but don't send response as we may not have sendResponse
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Background Script Top-Level Error:', errorMessage, chrome.runtime.lastError);
+    handleError(error, sendResponse);
   }
 });
