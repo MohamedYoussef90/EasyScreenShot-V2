@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "EasyScreenshot",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Capture visible area or entire page screenshots with URL option and preview in a new tab.",
   "permissions": [
     "activeTab",
     "scripting",
-    "downloads"
+    "downloads",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"

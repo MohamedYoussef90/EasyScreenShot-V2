@@ -64,9 +64,94 @@
     .btn-primary:hover {
       background: #45a049;
     }
+
+    .workspace {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      color: white;
+      background: rgba(0, 0, 0, 0.12);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-right: 10px;
+      border-right: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .toolbar-group:last-child {
+      padding-right: 0;
+      border-right: 0;
+    }
+
+    .tool-btn,
+    .toolbar select {
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .tool-btn:hover:not(:disabled),
+    .tool-btn[aria-pressed="true"] {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .tool-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .toolbar select option {
+      color: #222;
+    }
+
+    .toolbar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .toolbar input[type="color"] {
+      width: 36px;
+      height: 34px;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+    }
+
+    .toolbar-hint {
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      opacity: 0.8;
+    }
     
     .content {
       flex: 1;
+      min-height: 0;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -80,15 +165,18 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       padding: 20px;
       max-width: 95%;
-      max-height: 95%;
+      max-height: 100%;
       overflow: auto;
     }
     
-    .screenshot-image {
+    .screenshot-canvas {
+      display: block;
       max-width: 100%;
       height: auto;
       border-radius: 8px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      touch-action: none;
+      cursor: crosshair;
     }
     
     .loading {
@@ -139,19 +227,41 @@
     <div class="header-actions">
       <button id="downloadBtn" class="btn btn-primary" aria-label="Download screenshot">💾 Download</button>
       <button id="copyBtn" class="btn" aria-label="Copy screenshot to clipboard">📋 Copy</button>
-      <button id="highlightBtn" class="btn" aria-label="Toggle highlight mode" aria-pressed="false">🖍️ Highlight</button>
       <button id="closeBtn" class="btn" aria-label="Close preview tab">✕ Close</button>
     </div>
   </div>
   
-  <div class="content">
-    <div id="loading" class="loading">
-      <div class="loading-spinner"></div>
-      Processing screenshot...
+  <div class="workspace">
+    <div id="annotationToolbar" class="toolbar" role="toolbar" aria-label="Screenshot annotation tools" style="display: none;">
+      <div class="toolbar-group" aria-label="Drawing tools">
+        <button id="rectangleTool" class="tool-btn" type="button" aria-pressed="true" title="Draw a rectangle">▭ Rectangle</button>
+        <button id="penTool" class="tool-btn" type="button" aria-pressed="false" title="Draw freehand">✏️ Pen</button>
+        <button id="redactTool" class="tool-btn" type="button" aria-pressed="false" title="Paint an opaque redaction stroke">🔒 Blur / Redact</button>
+      </div>
+      <div class="toolbar-group">
+        <label for="annotationColor">Color</label>
+        <input id="annotationColor" type="color" value="#ff3b30" aria-label="Annotation color">
+        <label for="annotationThickness">Thickness</label>
+        <select id="annotationThickness" aria-label="Annotation thickness">
+          <option value="thin">Thin</option>
+          <option value="medium" selected>Medium</option>
+          <option value="thick">Thick</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <button id="undoBtn" class="tool-btn" type="button" disabled title="Undo last annotation">↩️ Undo</button>
+        <button id="clearBtn" class="tool-btn" type="button" disabled title="Remove all annotations">🗑️ Clear All</button>
+      </div>
+      <div class="toolbar-hint">Redaction uses a solid opaque stroke to reliably cover sensitive content.</div>
     </div>
-    <div id="screenshotContainer" class="screenshot-container" style="display: none; position: relative;">
-      <img id="screenshotImage" class="screenshot-image" alt="Screenshot">
-      <canvas id="highlightCanvas" style="display:none; position:absolute; left:0; top:0; pointer-events:none;"></canvas>
+    <div class="content">
+      <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        Processing screenshot...
+      </div>
+      <div id="screenshotContainer" class="screenshot-container" style="display: none;">
+        <canvas id="screenshotCanvas" class="screenshot-canvas" role="img" aria-label="Screenshot preview with annotations"></canvas>
+      </div>
     </div>
   </div>
   
@@ -163,4 +273,3 @@
   <script src="screenshot_preview.js"></script>
 </body>
 </html>
-
