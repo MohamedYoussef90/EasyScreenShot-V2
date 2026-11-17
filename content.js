@@ -17,37 +17,6 @@ function requestBackground(message) {
   });
 }
 
-function createCaptureToast() {
-  const host = document.createElement('div');
-  host.dataset.easyScreenshotCaptureStatus = 'true';
-  host.style.cssText = 'all: initial !important; position: fixed !important; right: 16px !important; bottom: 16px !important; z-index: 2147483647 !important; display: block !important; pointer-events: none !important;';
-
-  const shadow = host.attachShadow({ mode: 'open' });
-  const style = document.createElement('style');
-  style.textContent = `
-    :host { all: initial; }
-    [role="status"] {
-      max-width: min(360px, calc(100vw - 32px));
-      padding: 11px 15px;
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 9px;
-      color: #fff;
-      background: #202124;
-      box-shadow: 0 4px 16px rgba(0,0,0,.24);
-      font: 500 13px/1.4 system-ui, sans-serif;
-      overflow-wrap: anywhere;
-    }
-    [role="status"][data-kind="error"] { background: #8c1d18; }
-    [role="status"][data-kind="success"] { background: #137333; }
-  `;
-  const status = document.createElement('div');
-  status.setAttribute('role', 'status');
-  status.setAttribute('aria-live', 'polite');
-  shadow.append(style, status);
-  (document.body || document.documentElement).appendChild(host);
-  return { host, status };
-}
-
 function friendlyCaptureError(error) {
   const message = error instanceof Error ? error.message : String(error);
   if (/cannot access|not allowed|restricted|chrome:\/\/|web store|extensions gallery|cannot be scripted|cannot be captured|permission/i.test(message)) {
@@ -64,15 +33,8 @@ async function scrollAndCapture(message) {
   let originalScrollBehavior;
   let originalScrollBehaviorPriority;
   let pageStateSaved = false;
-  let toast;
+  let scrollbarStyle;
   const positionedElements = [];
-
-  const setToast = (text, kind) => {
-    if (!toast) toast = createCaptureToast();
-    toast.host.style.setProperty('display', 'block', 'important');
-    toast.status.dataset.kind = kind || 'progress';
-    toast.status.textContent = text;
-  };
 
   try {
     if (!message) throw new Error('No message provided');
@@ -85,7 +47,13 @@ async function scrollAndCapture(message) {
     pageStateSaved = true;
     html.style.setProperty('scroll-behavior', 'auto', 'important');
 
-    setToast('Preparing page for capture...', 'progress');
+    if (!document.head) throw new Error('The document head is not available.');
+    scrollbarStyle = document.createElement('style');
+    scrollbarStyle.textContent = `
+      html, body { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+      *::-webkit-scrollbar { display: none !important; }
+    `;
+    document.head.appendChild(scrollbarStyle);
     await delay(150);
 
     const getPageDimensions = () => ({
@@ -113,7 +81,6 @@ async function scrollAndCapture(message) {
     window.scrollTo(0, 0);
     await delay(100);
     document.querySelectorAll('*').forEach((element) => {
-      if (element === toast.host) return;
       const style = window.getComputedStyle(element);
       if (style.position !== 'fixed' && style.position !== 'sticky') return;
 
@@ -164,10 +131,11 @@ async function scrollAndCapture(message) {
         }
       });
 
-      setToast(`Capturing page segments... ${i + 1}/${steps.length}`, 'progress');
-      toast.host.style.setProperty('display', 'none', 'important');
+      await requestBackground({
+        action: 'fullPageCaptureProgress',
+        text: `${i + 1}/${steps.length}`
+      });
       const response = await requestBackground({ action: 'captureVisibleAreaForFullPage' });
-      toast.host.style.setProperty('display', 'block', 'important');
 
       if (!response || !response.dataUrl) {
         throw new Error(friendlyCaptureError(response && response.error
@@ -190,7 +158,6 @@ async function scrollAndCapture(message) {
       });
     }
 
-    setToast('Stitching screenshot segments...', 'progress');
     const stitchedCanvas = document.createElement('canvas');
     stitchedCanvas.width = fullWidth;
     stitchedCanvas.height = fullHeight;
@@ -254,33 +221,32 @@ async function scrollAndCapture(message) {
     });
     if (showResponse && showResponse.error) throw new Error(showResponse.error);
 
-    setToast('Capture complete. Opening preview...', 'success');
-    setTimeout(() => toast.host.remove(), 2200);
     return { success: true };
   } catch (error) {
     const messageText = friendlyCaptureError(error);
     console.error('Full-page capture failed:', error);
-    setToast(messageText, 'error');
-    setTimeout(() => toast.host.remove(), 6000);
     return { error: messageText };
   } finally {
-    positionedElements.forEach(({ element, visibility, visibilityPriority }) => {
-      if (visibility) {
-        element.style.setProperty('visibility', visibility, visibilityPriority);
-      } else {
-        element.style.removeProperty('visibility');
-      }
-    });
+    try {
+      positionedElements.forEach(({ element, visibility, visibilityPriority }) => {
+        if (visibility) {
+          element.style.setProperty('visibility', visibility, visibilityPriority);
+        } else {
+          element.style.removeProperty('visibility');
+        }
+      });
 
-    if (pageStateSaved) {
-      if (originalScrollBehavior) {
-        html.style.setProperty('scroll-behavior', originalScrollBehavior, originalScrollBehaviorPriority);
-      } else {
-        html.style.removeProperty('scroll-behavior');
+      if (pageStateSaved) {
+        if (originalScrollBehavior) {
+          html.style.setProperty('scroll-behavior', originalScrollBehavior, originalScrollBehaviorPriority);
+        } else {
+          html.style.removeProperty('scroll-behavior');
+        }
+        window.scrollTo(originalScrollLeft, originalScrollTop);
       }
-      window.scrollTo(originalScrollLeft, originalScrollTop);
+    } finally {
+      if (scrollbarStyle) scrollbarStyle.remove();
     }
-
   }
 }
 

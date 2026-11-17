@@ -12,6 +12,22 @@ const handleError = (error, sendResponse) => {
   sendResponse({ error: errorMessage });
 };
 
+const setCaptureBadge = (tabId, text, callback) => {
+  chrome.action.setBadgeText({ text, tabId }, () => {
+    if (chrome.runtime.lastError) {
+      const error = chrome.runtime.lastError.message;
+      console.error('Could not update capture progress badge:', error);
+      if (callback) callback(error);
+      return;
+    }
+    if (callback) callback();
+  });
+};
+
+const clearCaptureBadge = (tabId, callback) => {
+  setCaptureBadge(tabId, '', callback);
+};
+
 // Helper function to open the screenshot preview window
 const showScreenshot = (dataUrl, url, includeUrl, urlAlreadyIncluded = false) => {
   if (!dataUrl) {
@@ -71,22 +87,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.action === 'captureEntirePage') {
       // Full page capture is handled by injecting a content script
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        let tabId;
+        const failCapture = (error) => {
+          if (typeof tabId === 'number') {
+            clearCaptureBadge(tabId, () => handleError(error, sendResponse));
+          } else {
+            handleError(error, sendResponse);
+          }
+        };
+
         try {
           if (chrome.runtime.lastError) {
-            handleError('Tab query failed: ' + chrome.runtime.lastError.message, sendResponse);
+            failCapture('Tab query failed: ' + chrome.runtime.lastError.message);
             return;
           }
           
           if (!tabs || tabs.length === 0) {
-            handleError('No active tab found', sendResponse);
+            failCapture('No active tab found');
             return;
           }
           
-          const tabId = tabs[0].id;
+          tabId = tabs[0].id;
           if (typeof tabId !== 'number') {
-            handleError('The active tab is unavailable for capture.', sendResponse);
+            failCapture('The active tab is unavailable for capture.');
             return;
           }
+
+          chrome.action.setBadgeBackgroundColor({ color: '#1a73e8', tabId }, () => {
+            if (chrome.runtime.lastError) {
+              console.error('Could not set capture badge color:', chrome.runtime.lastError.message);
+            }
+          });
+          setCaptureBadge(tabId, '...');
           
           // Inject the content script using the modern chrome.scripting API
           chrome.scripting.executeScript({
@@ -95,7 +127,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }, (injectionResults) => {
             try {
               if (chrome.runtime.lastError) {
-                handleError(chrome.runtime.lastError.message, sendResponse);
+                failCapture(chrome.runtime.lastError.message);
                 return;
               }
               
@@ -106,26 +138,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 includeUrl: message.includeUrl 
               }, (response) => {
                 if (chrome.runtime.lastError) {
-                  handleError(chrome.runtime.lastError.message, sendResponse);
+                  failCapture(chrome.runtime.lastError.message);
                   return;
                 }
 
                 if (!response || response.error) {
-                  handleError(response && response.error ? response.error : 'The page did not return a screenshot.', sendResponse);
+                  failCapture(response && response.error ? response.error : 'The page did not return a screenshot.');
                   return;
                 }
-                sendResponse({ success: true });
+                clearCaptureBadge(tabId, () => sendResponse({ success: true }));
               });
             } catch (error) {
-              handleError(error, sendResponse);
+              failCapture(error);
             }
           });
         } catch (error) {
-          handleError(error, sendResponse);
+          failCapture(error);
         }
       });
       return true;
       
+    } else if (message.action === 'fullPageCaptureProgress') {
+      if (!sender.tab || typeof sender.tab.id !== 'number' || typeof message.text !== 'string') {
+        sendResponse({ error: 'Invalid full-page capture progress update.' });
+        return;
+      }
+
+      setCaptureBadge(sender.tab.id, message.text, (error) => {
+        sendResponse(error
+          ? { error: 'Could not update the capture progress badge.' }
+          : { success: true });
+      });
+      return true;
+
     } else if (message.action === 'captureVisibleAreaForFullPage') {
       // This is called by the content script during full-page capture
       chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
