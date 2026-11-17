@@ -18,24 +18,49 @@
   
   <div class="workspace">
     <div id="annotationToolbar" class="toolbar" role="toolbar" aria-label="Screenshot annotation tools" style="display: none;">
-      <div class="toolbar-group" aria-label="Drawing tools">
-        <button id="rectangleTool" class="tool-btn" type="button" aria-pressed="true" title="Draw a rectangle">▭ Rectangle</button>
-        <button id="penTool" class="tool-btn" type="button" aria-pressed="false" title="Draw freehand">✏️ Pen</button>
-        <button id="redactTool" class="tool-btn" type="button" aria-pressed="false" title="Paint an opaque redaction stroke">🔒 Blur / Redact</button>
+      <div class="toolbar-group" aria-label="Tools">
+        <span class="toolbar-group-title">Tools</span>
+        <div class="toolbar-controls">
+          <button id="selectTool" class="tool-btn" data-tool="select" type="button" aria-pressed="false" title="Select and move shapes">✋ Select / Move</button>
+          <button id="rectangleTool" class="tool-btn" type="button" aria-pressed="true" title="Draw a rectangle">▭ Rectangle</button>
+          <button id="penTool" class="tool-btn" type="button" aria-pressed="false" title="Draw freehand">✏️ Pen</button>
+          <button id="arrowTool" class="tool-btn" data-tool="arrow" type="button" aria-pressed="false" title="Draw an arrow">➡️ Arrow</button>
+          <button id="redactTool" class="tool-btn" type="button" aria-pressed="false" title="Paint an opaque redaction stroke">🔒 Blur / Redact</button>
+          <button id="textTool" class="tool-btn" data-tool="text" type="button" aria-pressed="false" title="Add text">💬 Text</button>
+        </div>
       </div>
-      <div class="toolbar-group">
-        <label for="annotationColor">Color</label>
-        <input id="annotationColor" type="color" value="#ff3b30" aria-label="Annotation color">
-        <label for="annotationThickness">Thickness</label>
-        <select id="annotationThickness" aria-label="Annotation thickness">
-          <option value="thin">Thin</option>
-          <option value="medium" selected>Medium</option>
-          <option value="thick">Thick</option>
-        </select>
+      <div class="toolbar-group" aria-label="Properties">
+        <span class="toolbar-group-title">Properties</span>
+        <div class="toolbar-controls">
+          <div id="colorProperty" class="toolbar-property">
+            <label for="annotationColor">Color</label>
+            <input id="annotationColor" type="color" value="#ff3b30" aria-label="Annotation color">
+          </div>
+          <div id="fontSizeProperty" class="toolbar-property" hidden>
+            <label for="textFontSize">Font size</label>
+            <select id="textFontSize" aria-label="Text annotation font size">
+              <option value="12">Small (12 px)</option>
+              <option value="16" selected>Medium (16 px)</option>
+              <option value="24">Large (24 px)</option>
+              <option value="32">Extra Large (32 px)</option>
+            </select>
+          </div>
+          <div id="thicknessProperty" class="toolbar-property">
+            <label for="annotationThickness">Thickness</label>
+            <select id="annotationThickness" aria-label="Annotation thickness">
+              <option value="thin">Thin</option>
+              <option value="medium" selected>Medium</option>
+              <option value="thick">Thick</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="toolbar-group">
-        <button id="undoBtn" class="tool-btn" type="button" disabled title="Undo last annotation">↩️ Undo</button>
-        <button id="clearBtn" class="tool-btn" type="button" disabled title="Remove all annotations">🗑️ Clear All</button>
+      <div class="toolbar-group toolbar-group-actions" aria-label="Actions">
+        <span class="toolbar-group-title">Actions</span>
+        <div class="toolbar-controls">
+          <button id="undoBtn" class="tool-btn" type="button" disabled title="Undo last annotation">↩️ Undo</button>
+          <button id="clearBtn" class="tool-btn" type="button" disabled title="Remove all annotations">🗑️ Clear All</button>
+        </div>
       </div>
       <div class="toolbar-hint">Redaction uses a solid opaque stroke to reliably cover sensitive content.</div>
     </div>

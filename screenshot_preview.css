@@ -112,6 +112,9 @@ body {
 }
 
 .toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   padding: 12px 16px;
   display: flex;
   flex-wrap: wrap;
@@ -121,19 +124,47 @@ body {
   color: var(--text);
   background: var(--toolbar);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
 }
 
 .toolbar-group {
-  padding-right: 10px;
+  padding: 0 12px;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   border-right: 1px solid var(--border);
 }
 
-.toolbar-group:last-child {
+.toolbar-group-actions {
   padding-right: 0;
   border-right: 0;
+}
+
+.toolbar-group-title {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.toolbar-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-property {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-property[hidden] {
+  display: none !important;
 }
 
 .tool-btn,
@@ -273,7 +304,7 @@ body {
   }
 
   .toolbar-group {
-    padding-right: 0;
+    padding: 0;
     border-right: 0;
   }
 }
