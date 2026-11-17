@@ -284,7 +284,11 @@ body {
 }
 
 .url-info {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  white-space: normal;
   color: var(--text-muted);
 }
 

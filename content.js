@@ -5,6 +5,21 @@ globalThis.__easyScreenshotContentInstalled = true;
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 let captureInProgress = false;
 
+function wrapCanvasText(context, text, maxWidth) {
+  const lines = [];
+  let line = '';
+
+  for (const character of Array.from(text)) {
+    if (line && context.measureText(line + character).width > maxWidth) {
+      lines.push(line);
+      line = '';
+    }
+    line += character;
+  }
+  if (line || !lines.length) lines.push(line);
+  return lines;
+}
+
 function requestBackground(message) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(message, (response) => {
@@ -191,22 +206,32 @@ async function scrollAndCapture(message) {
 
     let finalDataUrl = stitchedCanvas.toDataURL('image/png');
     if (message.includeUrl && message.url) {
-      const urlHeight = 50;
       const urlCanvas = document.createElement('canvas');
       urlCanvas.width = stitchedCanvas.width;
-      urlCanvas.height = stitchedCanvas.height + urlHeight;
       const urlContext = urlCanvas.getContext('2d');
       if (!urlContext) throw new Error('Could not create the URL header canvas.');
+
+      const horizontalPadding = Math.min(15, urlCanvas.width / 2);
+      const textWidth = Math.max(1, urlCanvas.width - horizontalPadding * 2);
+      const font = '16px Arial';
+      const lineHeight = 20;
+      urlContext.font = font;
+      const lines = wrapCanvasText(urlContext, message.url, textWidth);
+      const urlHeight = Math.max(50, 12 + lines.length * lineHeight + 12);
+      urlCanvas.height = stitchedCanvas.height + urlHeight;
 
       urlContext.fillStyle = '#fff';
       urlContext.fillRect(0, 0, urlCanvas.width, urlCanvas.height);
       urlContext.fillStyle = '#000';
-      urlContext.font = '16px Arial';
-      urlContext.fillText(message.url, 15, 30);
+      urlContext.font = font;
+      urlContext.textBaseline = 'top';
+      lines.forEach((line, index) => {
+        urlContext.fillText(line, horizontalPadding, 12 + index * lineHeight);
+      });
       urlContext.strokeStyle = '#ccc';
       urlContext.beginPath();
-      urlContext.moveTo(15, 40);
-      urlContext.lineTo(urlCanvas.width - 15, 40);
+      urlContext.moveTo(horizontalPadding, urlHeight - 1);
+      urlContext.lineTo(urlCanvas.width - horizontalPadding, urlHeight - 1);
       urlContext.stroke();
       urlContext.drawImage(stitchedCanvas, 0, urlHeight);
       finalDataUrl = urlCanvas.toDataURL('image/png');

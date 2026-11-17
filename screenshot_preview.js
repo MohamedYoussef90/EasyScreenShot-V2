@@ -167,22 +167,32 @@ document.addEventListener('DOMContentLoaded', function() {
       const image = new Image();
       image.onload = () => {
         try {
-          const urlHeight = 50;
           const canvas = document.createElement('canvas');
           canvas.width = image.naturalWidth;
-          canvas.height = image.naturalHeight + urlHeight;
           const ctx = canvas.getContext('2d');
           if (!ctx) throw new Error('Failed to create canvas context');
+
+          const horizontalPadding = Math.min(15, canvas.width / 2);
+          const textWidth = Math.max(1, canvas.width - horizontalPadding * 2);
+          const font = '16px Arial';
+          const lineHeight = 20;
+          ctx.font = font;
+          const lines = getWrappedTextLines(ctx, url, textWidth);
+          const urlHeight = Math.max(50, 12 + lines.length * lineHeight + 12);
+          canvas.height = image.naturalHeight + urlHeight;
 
           ctx.fillStyle = '#fff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#000';
-          ctx.font = '16px Arial';
-          ctx.fillText(url, 15, 30);
+          ctx.font = font;
+          ctx.textBaseline = 'top';
+          lines.forEach((line, index) => {
+            ctx.fillText(line, horizontalPadding, 12 + index * lineHeight);
+          });
           ctx.strokeStyle = '#ccc';
           ctx.beginPath();
-          ctx.moveTo(15, 40);
-          ctx.lineTo(canvas.width - 15, 40);
+          ctx.moveTo(horizontalPadding, urlHeight - 1);
+          ctx.lineTo(canvas.width - horizontalPadding, urlHeight - 1);
           ctx.stroke();
           ctx.drawImage(image, 0, urlHeight);
           resolve(canvas.toDataURL('image/png'));
